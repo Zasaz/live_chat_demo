@@ -66,39 +66,68 @@
 //     console.log('Listening on: ${PORT}' );
 // });
 
+///////////////////////////////
+///////////////////////////
+///////////////////////////
 
-const express = require("express");
-const Agora = require("agora-access-token");
 
-const app = express();
-app.use(express.json());
+// const express = require("express");
+// const Agora = require("agora-access-token");
 
-app.post("/rtctoken", (req, res) => {
-  const appID = "64ecec133d69451a91cd78531fd3f869  ";
-  const appCertificate = "38e4e5b25a2748928640d86ab4ebd4e4";
-  const expirationTimeInSeconds = 3600;
-  const uid = Math.floor(Math.random() * 100000);
-  const role = req.body.isPublisher ? Agora.RtcRole.PUBLISHER : Agora.RtcRole.SUBSCRIBER;
-  const channel = req.body.channel;
-  const currentTimestamp = Math.floor(Date.now() / 1000);
-  const expirationTimestamp = currentTimestamp + expirationTimeInSeconds;
+// const app = express();
+// app.use(express.json());
 
-  const token = Agora.RtcTokenBuilder.buildTokenWithUid(appID, appCertificate, channel, uid, role, expirationTimestamp);
-  res.send({ uid, token });
+// app.post("/rtctoken", (req, res) => {
+//   const appID = "64ecec133d69451a91cd78531fd3f869  ";
+//   const appCertificate = "38e4e5b25a2748928640d86ab4ebd4e4";
+//   const expirationTimeInSeconds = 3600;
+//   const uid = Math.floor(Math.random() * 100000);
+//   const role = req.body.isPublisher ? Agora.RtcRole.PUBLISHER : Agora.RtcRole.SUBSCRIBER;
+//   const channel = req.body.channel;
+//   const currentTimestamp = Math.floor(Date.now() / 1000);
+//   const expirationTimestamp = currentTimestamp + expirationTimeInSeconds;
+
+//   const token = Agora.RtcTokenBuilder.buildTokenWithUid(appID, appCertificate, channel, uid, role, expirationTimestamp);
+//   res.send({ uid, token });
+// });
+
+// app.post("/rtmtoken", (req, res) => {
+//   const appID = "64ecec133d69451a91cd78531fd3f869";
+//   const appCertificate = "38e4e5b25a2748928640d86ab4ebd4e4";
+//   const user = req.body.user;
+//   const role = Agora.RtmRole.Rtm_User;
+//   const expirationTimeInSeconds = 3600;
+//   const currentTimestamp = Math.floor(Date.now() / 1000);
+//   const expirationTimestamp = currentTimestamp + expirationTimeInSeconds;
+
+//   const token = Agora.RtmTokenBuilder.buildToken(appID, appCertificate, user, role, expirationTimestamp);
+//   res.send({ token });
+// });
+
+// const port = process.env.PORT || 3000;
+// app.listen(port, () => console.log(`Agora Auth Token Server listening at Port ${port}`));
+
+const restify = require("restify");
+const {RtcTokenBuilder, RtcRole} = require('agora-access-token');
+const server = restify.createServer();
+// Middleware
+server.use(restify.plugins.bodyParser());
+server.post("/generate_access_token/", (req, res, next) => {
+    const { channel, role } = req.body;
+    if (!channel){
+        return res.send(400);
+    }
+// get role
+let callRole = RtcRole.SUBSCRIBER;
+if ( role === "publisher"){
+    callRole = RtcRole.PUBLISHER;
+}
+let expireTime = 3600;
+let uid = 0;
+// calculate privilege expire time
+const currentTime = Math.floor(Date.now() / 1000);
+const privilegeExpireTime = currentTime + expireTime;
+const token = RtcTokenBuilder.buildTokenWithUid(AGORA_APP_ID, AGORA_APP_CERTIFICATE, channel, uid, callRole, privilegeExpireTime);
+res.send({ token });
 });
-
-app.post("/rtmtoken", (req, res) => {
-  const appID = "64ecec133d69451a91cd78531fd3f869";
-  const appCertificate = "38e4e5b25a2748928640d86ab4ebd4e4";
-  const user = req.body.user;
-  const role = Agora.RtmRole.Rtm_User;
-  const expirationTimeInSeconds = 3600;
-  const currentTimestamp = Math.floor(Date.now() / 1000);
-  const expirationTimestamp = currentTimestamp + expirationTimeInSeconds;
-
-  const token = Agora.RtmTokenBuilder.buildToken(appID, appCertificate, user, role, expirationTimestamp);
-  res.send({ token });
-});
-
-const port = process.env.PORT || 3000;
-app.listen(port, () => console.log(`Agora Auth Token Server listening at Port ${port}`));
+server.listen(process.env.PORT || 5500);
